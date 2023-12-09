@@ -52,9 +52,9 @@ func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib
 	}
 	var inefficientHostnames []string
 	// get servers whose active MTAs is less than or equal to threshold
-	for k, v := range activeIpConfig {
-		if v <= int(threshold) {
-			inefficientHostnames = append(inefficientHostnames, k)
+	for hostname, activeMTAs := range activeIpConfig {
+		if activeMTAs <= int(threshold) {
+			inefficientHostnames = append(inefficientHostnames, hostname)
 		}
 	}
 	return models.ServerResponse{
@@ -65,12 +65,12 @@ func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib
 // make map of server with active MTA information
 func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
 	serverMap := make(map[string]int)
-	for _, v := range ipConfig {
-		if v.Active {
-			serverMap[v.Hostname]++
+	for _, val := range ipConfig {
+		if val.Active {
+			serverMap[val.Hostname]++
 		} else {
-			if _, ok := serverMap[v.Hostname]; !ok {
-				serverMap[v.Hostname] = 0
+			if _, ok := serverMap[val.Hostname]; !ok {
+				serverMap[val.Hostname] = 0
 			}
 		}
 	}
