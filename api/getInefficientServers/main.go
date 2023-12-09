@@ -25,18 +25,18 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			Body: err.Error(),
 		}, nil
 	}
-	inefficientServers, svcErr := getInefficientServers(svc, req)
+	inefficientServers, svcErr := getInefficientServers(svc)
 	if svcErr != nil {
 		return service.ErrorResponse(svcErr), nil
 	}
 	if len(inefficientServers.Hostnames) == 0 {
-		svcErr := errorlib.New(errors.New("No inefficient servers found as per threshold"), http.StatusNotFound)
+		svcErr := errorlib.New(errors.New("no inefficient servers found as per threshold"), http.StatusNotFound)
 		return service.ErrorResponse(svcErr), nil
 	}
 	return service.SuccessResponse(inefficientServers), nil
 }
 
-func getInefficientServers(svc service.Service, req events.APIGatewayV2HTTPRequest) (models.ServerResponse, errorlib.Error) {
+func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib.Error) {
 	ipConfig, svcErr := getIpConfigData(svc)
 	if svcErr != nil {
 		return models.ServerResponse{}, svcErr
