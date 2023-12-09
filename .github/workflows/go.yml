@@ -6,7 +6,6 @@ on:
       - "**.go"
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
