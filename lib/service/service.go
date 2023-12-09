@@ -10,6 +10,7 @@ import (
 
 	"github.com/mta-hosting-optimizer/lib/aws/s3"
 	"github.com/mta-hosting-optimizer/lib/constants"
+	errorlib "github.com/mta-hosting-optimizer/lib/errorLib"
 	"github.com/mta-hosting-optimizer/lib/models"
 )
 
@@ -32,10 +33,21 @@ func NewService() (Service, error) {
 	}, nil
 }
 
-func SuccessResponse(resp models.HostnameResponse) events.APIGatewayV2HTTPResponse {
+func SuccessResponse(resp models.ServerResponse) events.APIGatewayV2HTTPResponse {
 	respBytes, _ := json.Marshal(resp)
 	return events.APIGatewayV2HTTPResponse{
 		Body:       string(respBytes),
 		StatusCode: http.StatusOK,
+	}
+}
+
+func ErrorResponse(errResp errorlib.Error) events.APIGatewayV2HTTPResponse {
+	respBytes, _ := json.Marshal(models.ErrorResponse{
+		Error: errResp.Error(),
+		Code:  errResp.StatusCode(),
+	})
+	return events.APIGatewayV2HTTPResponse{
+		Body:       string(respBytes),
+		StatusCode: errResp.StatusCode(),
 	}
 }

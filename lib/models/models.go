@@ -6,6 +6,11 @@ type IpConfig struct {
 	Active   bool   `json:"active"`
 }
 
-type HostnameResponse struct {
+type ServerResponse struct {
 	Hostnames []string `json:"hostnames"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+	Code  int    `json:"statusCode"`
 }

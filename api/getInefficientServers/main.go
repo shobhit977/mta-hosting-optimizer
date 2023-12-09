@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mta-hosting-optimizer/lib/constants"
+	errorlib "github.com/mta-hosting-optimizer/lib/errorLib"
 	"github.com/mta-hosting-optimizer/lib/models"
 	s3helper "github.com/mta-hosting-optimizer/lib/s3Helper"
 	"github.com/mta-hosting-optimizer/lib/service"
@@ -23,24 +25,24 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			Body: err.Error(),
 		}, nil
 	}
-	hostnames, err := getInefficientHostnames(svc, req)
-	if err != nil {
-		return events.APIGatewayV2HTTPResponse{}, err
+	inefficientServers, svcErr := getInefficientServers(svc, req)
+	if svcErr != nil {
+		return service.ErrorResponse(svcErr), nil
 	}
 
-	return service.SuccessResponse(hostnames), nil
+	return service.SuccessResponse(inefficientServers), nil
 }
 
-func getInefficientHostnames(svc service.Service, req events.APIGatewayV2HTTPRequest) (hostNamesResp models.HostnameResponse, err error) {
-	ipConfig, err := getIpConfigData(svc)
-	if err != nil {
-		return hostNamesResp, err
+func getInefficientServers(svc service.Service, req events.APIGatewayV2HTTPRequest) (models.ServerResponse, errorlib.Error) {
+	ipConfig, svcErr := getIpConfigData(svc)
+	if svcErr != nil {
+		return models.ServerResponse{}, svcErr
 	}
 	activeIpConfig := makeIpConfigMap(ipConfig)
 	threshold, err := strconv.ParseInt(os.Getenv(constants.ThresholdKey), 10, 32)
 	if err != nil {
 		log.Printf("%v", err)
-		return hostNamesResp, errors.New("invalid threshold value")
+		return models.ServerResponse{}, errorlib.New(errors.New("invalid threshold value"), http.StatusInternalServerError)
 	}
 	var inefficientHostnames []string
 	for k, v := range activeIpConfig {
@@ -48,8 +50,9 @@ func getInefficientHostnames(svc service.Service, req events.APIGatewayV2HTTPReq
 			inefficientHostnames = append(inefficientHostnames, k)
 		}
 	}
-	hostNamesResp.Hostnames = inefficientHostnames
-	return hostNamesResp, nil
+	return models.ServerResponse{
+		Hostnames: inefficientHostnames,
+	}, nil
 }
 
 func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
@@ -62,19 +65,19 @@ func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
 	return activeIpMap
 }
 
-func getIpConfigData(svc service.Service) ([]models.IpConfig, error) {
+func getIpConfigData(svc service.Service) ([]models.IpConfig, errorlib.Error) {
 	if !isFileExist(svc) {
-		return nil, errors.New("ip configuration data not found")
+		return nil, errorlib.New(errors.New("server Information not found"), http.StatusNotFound)
 	}
 	ipConfig, err := s3helper.GetS3Object(svc, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
-		return nil, err
+		return nil, errorlib.New(err, http.StatusInternalServerError)
 	}
 	var ipConfigData []models.IpConfig
 	if err := json.Unmarshal(ipConfig, &ipConfigData); err != nil {
 		log.Printf("%v", err)
-		return []models.IpConfig{}, err
+		return nil, errorlib.New(err, http.StatusInternalServerError)
 	}
 	return ipConfigData, nil
 }
