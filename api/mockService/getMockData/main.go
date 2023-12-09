@@ -29,9 +29,11 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 }
 
 func getIpConfig(svc service.Service) ([]byte, errorlib.Error) {
+	// return error if file does not exist in s3
 	if !isFileExist(svc) {
 		return nil, errorlib.New(errors.New("server information not found"), http.StatusNotFound)
 	}
+	// get mock data from s3 bucket
 	ipConfig, err := s3helper.GetS3Object(svc, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
@@ -40,6 +42,7 @@ func getIpConfig(svc service.Service) ([]byte, errorlib.Error) {
 	return ipConfig, nil
 }
 
+// checks if file exists in S3 bucket
 func isFileExist(svc service.Service) bool {
 	exist, err := s3helper.KeyExists(svc, constants.Bucket, constants.Key)
 	if err != nil {

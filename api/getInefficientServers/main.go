@@ -37,17 +37,21 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 }
 
 func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib.Error) {
+	// get server data from s3 bucket
 	ipConfig, svcErr := getIpConfigData(svc)
 	if svcErr != nil {
 		return models.ServerResponse{}, svcErr
 	}
+	// get servers with active MTAs
 	activeIpConfig := makeIpConfigMap(ipConfig)
+	// convert threshold to integer
 	threshold, err := strconv.ParseInt(os.Getenv(constants.ThresholdKey), 10, 32)
 	if err != nil {
 		log.Printf("%v", err)
 		return models.ServerResponse{}, errorlib.New(errors.New("invalid threshold value"), http.StatusInternalServerError)
 	}
 	var inefficientHostnames []string
+	// get servers whose active MTAs is less than or equal to threshold
 	for k, v := range activeIpConfig {
 		if v <= int(threshold) {
 			inefficientHostnames = append(inefficientHostnames, k)
@@ -58,6 +62,7 @@ func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib
 	}, nil
 }
 
+// make map of server with active MTAs
 func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
 	activeIpMap := make(map[string]int)
 	for _, v := range ipConfig {
@@ -69,9 +74,11 @@ func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
 }
 
 func getIpConfigData(svc service.Service) ([]models.IpConfig, errorlib.Error) {
+	// return error if mock data is not present in s3 bucket
 	if !isFileExist(svc) {
 		return nil, errorlib.New(errors.New("server Information not found"), http.StatusNotFound)
 	}
+	// get server data from file in s3 bucker
 	ipConfig, err := s3helper.GetS3Object(svc, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
@@ -85,6 +92,7 @@ func getIpConfigData(svc service.Service) ([]models.IpConfig, errorlib.Error) {
 	return ipConfigData, nil
 }
 
+// checks if file exists in S3 bucket
 func isFileExist(svc service.Service) bool {
 	exist, err := s3helper.KeyExists(svc, constants.Bucket, constants.Key)
 	if err != nil {

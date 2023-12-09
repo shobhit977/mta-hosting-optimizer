@@ -11,6 +11,7 @@ import (
 	"github.com/mta-hosting-optimizer/lib/service"
 )
 
+// add data to file in s3 bucket
 func PutS3Object(svc service.Service, byteData []byte, bucket string, key string) error {
 	params := &s3Svc.PutObjectInput{
 		Bucket: aws.String(bucket),
@@ -25,6 +26,7 @@ func PutS3Object(svc service.Service, byteData []byte, bucket string, key string
 	return nil
 }
 
+// get data from file in s3 bucket
 func GetS3Object(svc service.Service, bucket string, key string) ([]byte, error) {
 	params := &s3Svc.GetObjectInput{
 		Bucket: aws.String(bucket),
@@ -48,6 +50,7 @@ func GetS3Object(svc service.Service, bucket string, key string) ([]byte, error)
 
 }
 
+// check if file exist in s3 bucket
 func KeyExists(svc service.Service, bucket string, key string) (bool, error) {
 	_, err := svc.S3.HeadObject(&s3Svc.HeadObjectInput{
 		Bucket: aws.String(bucket),
