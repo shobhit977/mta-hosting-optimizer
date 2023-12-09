@@ -21,14 +21,14 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			Body: err.Error(),
 		}, nil
 	}
-	ipConfig, svcErr := getIpConfig(svc, req)
+	ipConfig, svcErr := getIpConfig(svc)
 	if svcErr != nil {
 		return service.ErrorResponse(svcErr), nil
 	}
 	return events.APIGatewayV2HTTPResponse{StatusCode: http.StatusOK, Body: string(ipConfig)}, nil
 }
 
-func getIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) ([]byte, errorlib.Error) {
+func getIpConfig(svc service.Service) ([]byte, errorlib.Error) {
 	if !isFileExist(svc) {
 		return nil, errorlib.New(errors.New("server information not found"), http.StatusNotFound)
 	}
