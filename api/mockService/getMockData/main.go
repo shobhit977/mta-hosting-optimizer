@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mta-hosting-optimizer/lib/constants"
+	errorlib "github.com/mta-hosting-optimizer/lib/errorLib"
 	s3helper "github.com/mta-hosting-optimizer/lib/s3Helper"
 	"github.com/mta-hosting-optimizer/lib/service"
 )
@@ -19,21 +21,21 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			Body: err.Error(),
 		}, nil
 	}
-	ipConfig, err := getIpConfig(svc, req)
-	if err != nil {
-		return events.APIGatewayV2HTTPResponse{}, err
+	ipConfig, svcErr := getIpConfig(svc, req)
+	if svcErr != nil {
+		return service.ErrorResponse(svcErr), nil
 	}
-	return events.APIGatewayV2HTTPResponse{StatusCode: 200, Body: string(ipConfig)}, nil
+	return events.APIGatewayV2HTTPResponse{StatusCode: http.StatusOK, Body: string(ipConfig)}, nil
 }
 
-func getIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) ([]byte, error) {
+func getIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) ([]byte, errorlib.Error) {
 	if !isFileExist(svc) {
-		return nil, errors.New("ip configuration data not found")
+		return nil, errorlib.New(errors.New("server information not found"), http.StatusNotFound)
 	}
 	ipConfig, err := s3helper.GetS3Object(svc, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
-		return nil, err
+		return nil, errorlib.New(err, http.StatusInternalServerError)
 	}
 	return ipConfig, nil
 }
