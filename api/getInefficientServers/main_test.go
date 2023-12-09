@@ -24,6 +24,14 @@ var mockServerJsonData = `[{
 	"ip":"DummyIP2",
 	"hostname":"DummyHostname2",
 	"active": false
+},{
+	"ip":"DummyIP2",
+	"hostname":"DummyHostname2",
+	"active": true
+},{
+	"ip":"DummyIP1",
+	"hostname":"DummyHostname2",
+	"active": true
 }]`
 
 func Test_getInefficientServers_Success(t *testing.T) {
@@ -41,13 +49,41 @@ func Test_getInefficientServers_Success(t *testing.T) {
 		},
 		Sess: sess,
 	}
-	os.Setenv(constants.ThresholdKey, "1")
-	expectedResult := models.ServerResponse{
-		Hostnames: []string{"DummyHostname1"},
+	tests := []struct {
+		name      string
+		threshold string
+		expected  models.ServerResponse
+	}{
+		{
+			name:      "Success with threshold as 1",
+			threshold: "1",
+			expected: models.ServerResponse{
+				Hostnames: []string{"DummyHostname1"},
+			},
+		},
+		{
+			name:      "Success with threshold as 2",
+			threshold: "2",
+			expected: models.ServerResponse{
+				Hostnames: []string{"DummyHostname1", "DummyHostname2"},
+			},
+		},
+		{
+			name:      "Success with threshold as 0",
+			threshold: "0",
+			expected: models.ServerResponse{
+				Hostnames: []string(nil),
+			},
+		},
 	}
-	result, err := getInefficientServers(svc)
-	assert.Nil(t, err)
-	assert.Equal(t, result, expectedResult)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv(constants.ThresholdKey, tt.threshold)
+			result, err := getInefficientServers(svc)
+			assert.Nil(t, err)
+			assert.Equal(t, result, tt.expected)
+		})
+	}
 
 }
 
