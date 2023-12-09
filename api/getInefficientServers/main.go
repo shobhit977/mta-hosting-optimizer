@@ -42,7 +42,7 @@ func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib
 	if svcErr != nil {
 		return models.ServerResponse{}, svcErr
 	}
-	// get servers with active MTAs
+	// get servers with active MTA information
 	activeIpConfig := makeIpConfigMap(ipConfig)
 	// convert threshold to integer
 	threshold, err := strconv.ParseInt(os.Getenv(constants.ThresholdKey), 10, 32)
@@ -62,15 +62,19 @@ func getInefficientServers(svc service.Service) (models.ServerResponse, errorlib
 	}, nil
 }
 
-// make map of server with active MTAs
+// make map of server with active MTA information
 func makeIpConfigMap(ipConfig []models.IpConfig) map[string]int {
-	activeIpMap := make(map[string]int)
+	serverMap := make(map[string]int)
 	for _, v := range ipConfig {
 		if v.Active {
-			activeIpMap[v.Hostname]++
+			serverMap[v.Hostname]++
+		} else {
+			if _, ok := serverMap[v.Hostname]; !ok {
+				serverMap[v.Hostname] = 0
+			}
 		}
 	}
-	return activeIpMap
+	return serverMap
 }
 
 func getIpConfigData(svc service.Service) ([]models.IpConfig, errorlib.Error) {

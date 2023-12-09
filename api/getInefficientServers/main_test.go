@@ -32,6 +32,10 @@ var mockServerJsonData = `[{
 	"ip":"DummyIP1",
 	"hostname":"DummyHostname2",
 	"active": true
+},{
+	"ip":"DummyIP3",
+	"hostname":"DummyHostname3",
+	"active": false
 }]`
 
 func Test_getInefficientServers_Success(t *testing.T) {
@@ -58,21 +62,21 @@ func Test_getInefficientServers_Success(t *testing.T) {
 			name:      "Success with threshold as 1",
 			threshold: "1",
 			expected: models.ServerResponse{
-				Hostnames: []string{"DummyHostname1"},
+				Hostnames: []string{"DummyHostname1", "DummyHostname3"},
 			},
 		},
 		{
 			name:      "Success with threshold as 2",
 			threshold: "2",
 			expected: models.ServerResponse{
-				Hostnames: []string{"DummyHostname1", "DummyHostname2"},
+				Hostnames: []string{"DummyHostname1", "DummyHostname2", "DummyHostname3"},
 			},
 		},
 		{
 			name:      "Success with threshold as 0",
 			threshold: "0",
 			expected: models.ServerResponse{
-				Hostnames: []string(nil),
+				Hostnames: []string{"DummyHostname3"},
 			},
 		},
 	}
