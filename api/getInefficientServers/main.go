@@ -29,7 +29,10 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	if svcErr != nil {
 		return service.ErrorResponse(svcErr), nil
 	}
-
+	if len(inefficientServers.Hostnames) == 0 {
+		svcErr := errorlib.New(errors.New("No inefficient servers found as per threshold"), http.StatusNotFound)
+		return service.ErrorResponse(svcErr), nil
+	}
 	return service.SuccessResponse(inefficientServers), nil
 }
 
