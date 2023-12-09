@@ -1,11 +1,16 @@
 package service
 
 import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/mta-hosting-optimizer/lib/aws/s3"
 	"github.com/mta-hosting-optimizer/lib/constants"
+	"github.com/mta-hosting-optimizer/lib/models"
 )
 
 type Service struct {
@@ -25,4 +30,12 @@ func NewService() (Service, error) {
 		Sess: sess,
 		S3:   s3Client,
 	}, nil
+}
+
+func SuccessResponse(resp models.HostnameResponse) events.APIGatewayV2HTTPResponse {
+	respBytes, _ := json.Marshal(resp)
+	return events.APIGatewayV2HTTPResponse{
+		Body:       string(respBytes),
+		StatusCode: http.StatusOK,
+	}
 }

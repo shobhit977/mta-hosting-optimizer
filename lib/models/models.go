@@ -5,3 +5,7 @@ type IpConfig struct {
 	Hostname string `json:"hostname"`
 	Active   bool   `json:"active"`
 }
+
+type HostnameResponse struct {
+	Hostnames []string `json:"hostnames"`
+}

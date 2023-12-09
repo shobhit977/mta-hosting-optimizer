@@ -25,6 +25,7 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	}
 	return events.APIGatewayV2HTTPResponse{StatusCode: 200, Body: string(ipConfig)}, nil
 }
+
 func getIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) ([]byte, error) {
 	if !isFileExist(svc) {
 		return nil, errors.New("ip configuration data not found")
@@ -44,6 +45,7 @@ func isFileExist(svc service.Service) bool {
 	}
 	return exist
 }
+
 func main() {
 	lambda.Start(handler)
 }
