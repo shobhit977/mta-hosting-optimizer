@@ -51,3 +51,15 @@ func ErrorResponse(errResp errorlib.Error) events.APIGatewayV2HTTPResponse {
 		StatusCode: errResp.StatusCode(),
 	}
 }
+
+func MockSuccessResponse() events.APIGatewayV2HTTPResponse {
+	respBytes, _ := json.Marshal(struct {
+		Message string `json:"message"`
+	}{
+		Message: "Success",
+	})
+	return events.APIGatewayV2HTTPResponse{
+		Body:       string(respBytes),
+		StatusCode: http.StatusCreated,
+	}
+}

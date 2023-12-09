@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mta-hosting-optimizer/lib/constants"
+	errorlib "github.com/mta-hosting-optimizer/lib/errorLib"
 	"github.com/mta-hosting-optimizer/lib/models"
 	s3helper "github.com/mta-hosting-optimizer/lib/s3Helper"
 	"github.com/mta-hosting-optimizer/lib/service"
@@ -21,12 +23,12 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			Body: err.Error(),
 		}, nil
 	}
-	err = addIpConfig(svc, req)
-	if err != nil {
-		return events.APIGatewayV2HTTPResponse{}, err
+	svcErr := addIpConfig(svc, req)
+	if svcErr != nil {
+		return service.ErrorResponse(svcErr), nil
 	}
 
-	return events.APIGatewayV2HTTPResponse{StatusCode: 201, Body: "Success"}, nil
+	return service.MockSuccessResponse(), nil
 }
 
 func generateIpConfigOutput(svc service.Service, IpConfigData models.IpConfig, existingInfo []models.IpConfig) []byte {
@@ -35,18 +37,17 @@ func generateIpConfigOutput(svc service.Service, IpConfigData models.IpConfig, e
 	return allIpConfigBytes
 }
 
-func addIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) (err error) {
+func addIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) errorlib.Error {
 	//return error if body is empty
 	if req.Body == "" {
-		return errors.New("request body cannot be empty. Please provide valid data")
+		return errorlib.New(errors.New("request body cannot be empty. Please provide valid data"), http.StatusBadRequest)
 	}
 	var request models.IpConfig
 	var ipConfigBytes []byte
 	if err := json.Unmarshal([]byte(req.Body), &request); err != nil {
 		log.Printf("%v", err)
-		return err
+		return errorlib.New(err, http.StatusInternalServerError)
 	}
-	// add validation
 	if isFileExist(svc) {
 		existingInfo, err := getExistingIpConfigData(svc)
 		if err != nil {
@@ -56,10 +57,10 @@ func addIpConfig(svc service.Service, req events.APIGatewayV2HTTPRequest) (err e
 	} else {
 		ipConfigBytes = generateIpConfigOutput(svc, request, nil)
 	}
-	err = s3helper.PutS3Object(svc, ipConfigBytes, constants.Bucket, constants.Key)
+	err := s3helper.PutS3Object(svc, ipConfigBytes, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
-		return err
+		return errorlib.New(err, http.StatusInternalServerError)
 	}
 
 	return nil
@@ -73,16 +74,16 @@ func isFileExist(svc service.Service) bool {
 	return exist
 }
 
-func getExistingIpConfigData(svc service.Service) ([]models.IpConfig, error) {
+func getExistingIpConfigData(svc service.Service) ([]models.IpConfig, errorlib.Error) {
 	existingInfo, err := s3helper.GetS3Object(svc, constants.Bucket, constants.Key)
 	if err != nil {
 		log.Printf("%v", err)
-		return []models.IpConfig{}, err
+		return nil, errorlib.New(err, http.StatusInternalServerError)
 	}
 	var ipConfig []models.IpConfig
 	if err := json.Unmarshal(existingInfo, &ipConfig); err != nil {
 		log.Printf("%v", err)
-		return []models.IpConfig{}, err
+		return nil, errorlib.New(err, http.StatusInternalServerError)
 	}
 	return ipConfig, nil
 }
