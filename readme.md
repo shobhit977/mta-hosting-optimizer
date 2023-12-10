@@ -77,7 +77,7 @@ To Execute service API to get inefficient servers :
     - ![](img/getInefficientServer.png)
 
     - `service_api_id` : 76droe54z3
-    - `region` : api-south-1
+    - `region` : ap-south-1
 
 To Execute mock API to add server data :
 - Execute via postman :
@@ -91,7 +91,7 @@ To Execute mock API to add server data :
         ```
     - ![](img/addmockdata.png)
     - `mock_api_id` : z4hz2a61j9
-    - `region` : api-south-1
+    - `region` : ap-south-1
     
 To Execute mock API to get server data :
 - Execute via postman :
